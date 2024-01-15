@@ -3,6 +3,23 @@ variable "location" {
   type        = string
 }
 
+variable "logic_apps" {
+  description = "The logic app blocks"
+  default     = null
+  type = list(object({
+    name                         = string
+    app_service_plan_name        = optional(string)
+    os_type                      = string
+    sku_name                     = string
+    app_service_environment_id   = optional(string, null)
+    maximum_elastic_worker_count = optional(number, null)
+    worker_count                 = optional(number, null)
+    per_site_scaling_enabled     = optional(bool, null)
+    zone_balancing_enabled       = optional(bool, null)
+    storage_account_name         = string
+  }))
+}
+
 variable "name" {
   type        = string
   description = "The name of the VNet gateway"
