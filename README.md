@@ -172,6 +172,19 @@ No modules.
 
 | Name | Description |
 |------|-------------|
+| <a name="output_logic_app_auto_swap_slot_names"></a> [logic\_app\_auto\_swap\_slot\_names](#output\_logic\_app\_auto\_swap\_slot\_names) | Auto-swap slot names for the Logic Apps |
+| <a name="output_logic_app_custom_domain_verification_ids"></a> [logic\_app\_custom\_domain\_verification\_ids](#output\_logic\_app\_custom\_domain\_verification\_ids) | Custom domain verification IDs for the Logic Apps |
+| <a name="output_logic_app_default_hostnames"></a> [logic\_app\_default\_hostnames](#output\_logic\_app\_default\_hostnames) | The default hostnames of the Logic Apps |
+| <a name="output_logic_app_identities"></a> [logic\_app\_identities](#output\_logic\_app\_identities) | Managed Service Identity information for the Logic Apps |
+| <a name="output_logic_app_ids"></a> [logic\_app\_ids](#output\_logic\_app\_ids) | The IDs of the Logic Apps |
+| <a name="output_logic_app_kinds"></a> [logic\_app\_kinds](#output\_logic\_app\_kinds) | The kinds of the Logic Apps |
+| <a name="output_logic_app_outbound_ip_addresses"></a> [logic\_app\_outbound\_ip\_addresses](#output\_logic\_app\_outbound\_ip\_addresses) | Comma-separated list of outbound IP addresses for the Logic Apps |
+| <a name="output_logic_app_possible_outbound_ip_addresses"></a> [logic\_app\_possible\_outbound\_ip\_addresses](#output\_logic\_app\_possible\_outbound\_ip\_addresses) | Comma-separated list of possible outbound IP addresses for the Logic Apps |
+| <a name="output_logic_app_principal_ids"></a> [logic\_app\_principal\_ids](#output\_logic\_app\_principal\_ids) | Principal IDs for the Service Principal associated with the MSI of the Logic Apps |
+| <a name="output_logic_app_publishing_passwords"></a> [logic\_app\_publishing\_passwords](#output\_logic\_app\_publishing\_passwords) | Passwords for the publishing usernames of the Logic Apps |
+| <a name="output_logic_app_publishing_usernames"></a> [logic\_app\_publishing\_usernames](#output\_logic\_app\_publishing\_usernames) | Usernames for publishing to the Logic Apps |
+| <a name="output_logic_app_site_credentials"></a> [logic\_app\_site\_credentials](#output\_logic\_app\_site\_credentials) | Site-level credentials for publishing to the Logic Apps |
+| <a name="output_logic_app_tenant_ids"></a> [logic\_app\_tenant\_ids](#output\_logic\_app\_tenant\_ids) | Tenant IDs for the Service Principal associated with the MSI of the Logic Apps |
 | <a name="output_service_plan_ids"></a> [service\_plan\_ids](#output\_service\_plan\_ids) | The IDs of the service plans |
 | <a name="output_service_plan_kinds"></a> [service\_plan\_kinds](#output\_service\_plan\_kinds) | The kinds of the service plans |
 | <a name="output_service_plan_names"></a> [service\_plan\_names](#output\_service\_plan\_names) | The names of the service plans |
