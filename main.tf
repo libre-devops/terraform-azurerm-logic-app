@@ -14,7 +14,7 @@ resource "azurerm_service_plan" "service_plan" {
 
 resource "azurerm_logic_app_standard" "logic_app" {
   depends_on = [azurerm_service_plan.service_plan]
-  for_each = { for app in var.logic_apps : app.name => app if app.app_service_plan_name != null }
+  for_each   = { for app in var.logic_apps : app.name => app if app.app_service_plan_name != null }
 
   name                       = each.value.name
   location                   = var.location
@@ -55,35 +55,35 @@ resource "azurerm_logic_app_standard" "logic_app" {
       dotnet_framework_version  = site_config.value.dotnet_framework_version != null ? site_config.value.dotnet_framework_version : null
       scm_type                  = site_config.value.scm_type != null ? site_config.value.scm_type : null
       use_32_bit_worker_process = site_config.value.use_32_bit_worker_process != null ? site_config.value.use_32_bit_worker_process : null
-#      websockets_enabled        = site_config.value.websockets_enabled != null ? site_config.value.websockets_enabled : null
+      #      websockets_enabled        = site_config.value.websockets_enabled != null ? site_config.value.websockets_enabled : null
 
       ip_restriction = [for ipr in site_config.value.ip_restriction : {
-      name                      = ipr.name
-      ip_address                = ipr.ip_address
-      virtual_network_subnet_id = ipr.virtual_network_subnet_id
-      priority                  = ipr.priority
-      action                    = ipr.action
-      headers                   = [for hdr in ipr.headers : {
-        x_azure_fdid      = hdr.x_azure_fdid
-        x_fd_health_probe = hdr.x_fd_health_probe
-        x_forwarded_for   = hdr.x_forwarded_for
-        x_forwarded_host  = hdr.x_forwarded_host
+        name                      = ipr.name
+        ip_address                = ipr.ip_address
+        virtual_network_subnet_id = ipr.virtual_network_subnet_id
+        priority                  = ipr.priority
+        action                    = ipr.action
+        headers = [for hdr in ipr.headers : {
+          x_azure_fdid      = hdr.x_azure_fdid
+          x_fd_health_probe = hdr.x_fd_health_probe
+          x_forwarded_for   = hdr.x_forwarded_for
+          x_forwarded_host  = hdr.x_forwarded_host
+        }]
       }]
-    }]
 
       scm_ip_restriction = [for scmr in site_config.value.scm_ip_restriction : {
-      name                      = scmr.name
-      ip_address                = scmr.ip_address
-      virtual_network_subnet_id = scmr.virtual_network_subnet_id
-      priority                  = scmr.priority
-      action                    = scmr.action
-      headers                   = [for hdr in scmr.headers : {
-        x_azure_fdid      = hdr.x_azure_fdid
-        x_fd_health_probe = hdr.x_fd_health_probe
-        x_forwarded_for   = hdr.x_forwarded_for
-        x_forwarded_host  = hdr.x_forwarded_host
+        name                      = scmr.name
+        ip_address                = scmr.ip_address
+        virtual_network_subnet_id = scmr.virtual_network_subnet_id
+        priority                  = scmr.priority
+        action                    = scmr.action
+        headers = [for hdr in scmr.headers : {
+          x_azure_fdid      = hdr.x_azure_fdid
+          x_fd_health_probe = hdr.x_fd_health_probe
+          x_forwarded_for   = hdr.x_forwarded_for
+          x_forwarded_host  = hdr.x_forwarded_host
+        }]
       }]
-    }]
 
       dynamic "cors" {
         for_each = site_config.value.cors != null ? [site_config.value.cors] : []

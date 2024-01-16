@@ -9,13 +9,13 @@ resource "azurerm_service_plan" "service_plan" {
   app_service_environment_id   = each.value.app_service_environment_id != null ? each.value.app_service_environment_id : null
   maximum_elastic_worker_count = each.value.maximum_elastic_worker_count != null ? each.value.maximum_elastic_worker_count : null
   worker_count                 = each.value.worker_count != null ? each.value.worker_count : null
-  per_site_scaling             = each.value.per_site_scaling_enabled != null ? each.value.per_site_scaling_enabled : null
   zone_balancing_enabled       = each.value.zone_balancing_enabled != null ? each.value.zone_balancing_enabled : null
   tags                         = var.tags
 }
 
-resource "azurerm_logic_app_standard" "this" {
-  for_each = { for app in var.logic_apps : app.name => app if app.app_service_plan_name != null }
+resource "azurerm_logic_app_standard" "logic_app" {
+  depends_on = [azurerm_service_plan.service_plan]
+  for_each   = { for app in var.logic_apps : app.name => app if app.app_service_plan_name != null }
 
   name                       = each.value.name
   location                   = var.location
@@ -52,56 +52,39 @@ resource "azurerm_logic_app_standard" "this" {
       ftps_state                = site_config.value.ftps_state != null ? site_config.value.ftps_state : null
       health_check_path         = site_config.value.health_check_path != null ? site_config.value.health_check_path : null
       http2_enabled             = site_config.value.http2_enabled != null ? site_config.value.http2_enabled : null
-      ip_restriction            = site_config.value.ip_restriction != null ? site_config.value.ip_restriction : null
       min_tls_version           = site_config.value.min_tls_version != null ? site_config.value.min_tls_version : null
       dotnet_framework_version  = site_config.value.dotnet_framework_version != null ? site_config.value.dotnet_framework_version : null
       scm_type                  = site_config.value.scm_type != null ? site_config.value.scm_type : null
       use_32_bit_worker_process = site_config.value.use_32_bit_worker_process != null ? site_config.value.use_32_bit_worker_process : null
-      websockets_enabled        = site_config.value.websockets_enabled != null ? site_config.value.websockets_enabled : null
+      #      websockets_enabled        = site_config.value.websockets_enabled != null ? site_config.value.websockets_enabled : null
 
-      dynamic "ip_restriction" {
-        for_each = site_config.value.ip_restriction != null ? [site_config.value.ip_restriction] : []
-        content {
-          name                      = ip_restriction.value.name
-          ip_address                = ip_restriction.value.ip_address
-          virtual_network_subnet_id = ip_restriction.value.virtual_network_subnet_id
-          priority                  = ip_restriction.value.priority
-          action                    = ip_restriction.value.action
+      ip_restriction = [for ipr in site_config.value.ip_restriction : {
+        name                      = ipr.name
+        ip_address                = ipr.ip_address
+        virtual_network_subnet_id = ipr.virtual_network_subnet_id
+        priority                  = ipr.priority
+        action                    = ipr.action
+        headers = [for hdr in ipr.headers : {
+          x_azure_fdid      = hdr.x_azure_fdid
+          x_fd_health_probe = hdr.x_fd_health_probe
+          x_forwarded_for   = hdr.x_forwarded_for
+          x_forwarded_host  = hdr.x_forwarded_host
+        }]
+      }]
 
-          dynamic "headers" {
-            for_each = ip_restriction.value.headers != null ? [ip_restriction.value.headers] : []
-            content {
-              x_azure_fdid      = headers.value.x_azure_fdid
-              x_fd_health_probe = headers.value.x_fd_health_probe
-              x_forwarded_for   = headers.value.x_forwarded_for
-              x_forwarded_host  = headers.value.x_forwarded_host
-            }
-          }
-
-        }
-      }
-
-      dynamic "scm_ip_restriction" {
-        for_each = site_config.value.scm_ip_restriction != null ? [site_config.value.scm_ip_restriction] : []
-        content {
-          name                      = scm_ip_restriction.value.name
-          ip_address                = scm_ip_restriction.value.ip_address
-          virtual_network_subnet_id = scm_ip_restriction.value.virtual_network_subnet_id
-          priority                  = scm_ip_restriction.value.priority
-          action                    = scm_ip_restriction.value.action
-
-          dynamic "headers" {
-            for_each = scm_ip_restriction.value.headers != null ? [scm_ip_restriction.value.headers] : []
-            content {
-              x_azure_fdid      = headers.value.x_azure_fdid
-              x_fd_health_probe = headers.value.x_fd_health_probe
-              x_forwarded_for   = headers.value.x_forwarded_for
-              x_forwarded_host  = headers.value.x_forwarded_host
-            }
-          }
-
-        }
-      }
+      scm_ip_restriction = [for scmr in site_config.value.scm_ip_restriction : {
+        name                      = scmr.name
+        ip_address                = scmr.ip_address
+        virtual_network_subnet_id = scmr.virtual_network_subnet_id
+        priority                  = scmr.priority
+        action                    = scmr.action
+        headers = [for hdr in scmr.headers : {
+          x_azure_fdid      = hdr.x_azure_fdid
+          x_fd_health_probe = hdr.x_fd_health_probe
+          x_forwarded_for   = hdr.x_forwarded_for
+          x_forwarded_host  = hdr.x_forwarded_host
+        }]
+      }]
 
       dynamic "cors" {
         for_each = site_config.value.cors != null ? [site_config.value.cors] : []
@@ -156,7 +139,7 @@ No modules.
 
 | Name | Type |
 |------|------|
-| [azurerm_logic_app_standard.this](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/logic_app_standard) | resource |
+| [azurerm_logic_app_standard.logic_app](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/logic_app_standard) | resource |
 | [azurerm_service_plan.service_plan](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/service_plan) | resource |
 
 ## Inputs
@@ -164,7 +147,7 @@ No modules.
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_location"></a> [location](#input\_location) | The location for this resource to be put in | `string` | n/a | yes |
-| <a name="input_logic_apps"></a> [logic\_apps](#input\_logic\_apps) | The logic app blocks | <pre>list(object({<br>    name                         = string<br>    app_service_plan_name        = optional(string)<br>    os_type                      = string<br>    sku_name                     = string<br>    app_service_environment_id   = optional(string, null)<br>    maximum_elastic_worker_count = optional(number, null)<br>    worker_count                 = optional(number, null)<br>    per_site_scaling_enabled     = optional(bool, null)<br>    zone_balancing_enabled       = optional(bool, null)<br>    storage_account_name         = string<br>    storage_account_access_key   = optional(string)<br>    use_extension_bundle         = optional(bool)<br>    bundle_version               = optional(string)<br>    client_affinity_enabled      = optional(bool)<br>    client_certificate_mode      = optional(string)<br>    enabled                      = optional(bool)<br>    https_only                   = optional(bool, true)<br>    version                      = optional(string)<br>    virtual_network_subnet_id    = optional(string)<br>    identity_type                = optional(string)<br>    identity_ids                 = optional(list(string))<br>    app_settings                 = optional(map(string))<br><br>    connection_string = optional(object({<br>      name  = string<br>      type  = string<br>      value = string<br>    }))<br><br>    site_config = optional(object({<br>      always_on                        = optional(bool)<br>      app_scale_limit                  = optional(number)<br>      dotnet_framework_version         = optional(string)<br>      elastic_instance_minimum         = optional(number)<br>      ftps_state                       = optional(string)<br>      health_check_path                = optional(string)<br>      http2_enabled                    = optional(bool, false)<br>      scm_use_main_ip_restriction      = optional(bool, false)<br>      scm_min_tls_version              = optional(string, "1.2")<br>      scm_type                         = optional(string)<br>      linux_fx_version                 = optional(string)<br>      min_tls_version                  = optional(string, "1.2")<br>      pre_warmed_instance_count        = optional(number)<br>      public_network_enabled           = optional(bool, false)<br>      runtime_scale_monitoring_enabled = optional(bool, false)<br>      use_32_bit_worker_process        = optional(bool)<br>      vnet_route_all_enabled           = optional(bool)<br>      websocket_enabled                = optional(bool)<br><br>      ip_restriction = optional(list(object({<br>        name                      = optional(string)<br>        ip_address                = optional(string)<br>        service_tag               = optional(string)<br>        virtual_network_subnet_id = optional(string)<br>        priority                  = optional(number)<br>        action                    = optional(string)<br>        headers = optional(object({<br>          x_azure_fdid      = optional(string)<br>          x_fd_health_probe = optional(string)<br>          x_forwarded_for   = optional(string)<br>          x_forwarded_host  = optional(string)<br>        }))<br>      })))<br><br>      scm_ip_restriction = optional(list(object({<br>        name                      = optional(string)<br>        ip_address                = optional(string)<br>        service_tag               = optional(string)<br>        virtual_network_subnet_id = optional(string)<br>        priority                  = optional(number)<br>        action                    = optional(string)<br>        headers = optional(object({<br>          x_azure_fdid      = optional(string)<br>          x_fd_health_probe = optional(string)<br>          x_forwarded_for   = optional(string)<br>          x_forwarded_host  = optional(string)<br>        }))<br>      })))<br><br>      cors = optional(object({<br>        allowed_origins     = optional(set(string))<br>        support_credentials = optional(bool)<br>      }))<br>    }))<br>  }))</pre> | `null` | no |
+| <a name="input_logic_apps"></a> [logic\_apps](#input\_logic\_apps) | The logic app blocks | <pre>list(object({<br>    name                         = string<br>    app_service_plan_name        = optional(string)<br>    os_type                      = string<br>    sku_name                     = string<br>    app_service_environment_id   = optional(string, null)<br>    maximum_elastic_worker_count = optional(number, null)<br>    worker_count                 = optional(number, null)<br>    zone_balancing_enabled       = optional(bool, null)<br>    storage_account_name         = string<br>    storage_account_access_key   = optional(string)<br>    use_extension_bundle         = optional(bool)<br>    bundle_version               = optional(string)<br>    client_affinity_enabled      = optional(bool)<br>    client_certificate_mode      = optional(string)<br>    enabled                      = optional(bool)<br>    https_only                   = optional(bool, true)<br>    version                      = optional(string)<br>    virtual_network_subnet_id    = optional(string)<br>    identity_type                = optional(string)<br>    identity_ids                 = optional(list(string))<br>    app_settings                 = optional(map(string))<br><br>    connection_string = optional(object({<br>      name  = string<br>      type  = string<br>      value = string<br>    }))<br><br>    site_config = optional(object({<br>      always_on                        = optional(bool)<br>      app_scale_limit                  = optional(number)<br>      dotnet_framework_version         = optional(string)<br>      elastic_instance_minimum         = optional(number)<br>      ftps_state                       = optional(string)<br>      health_check_path                = optional(string)<br>      http2_enabled                    = optional(bool, false)<br>      scm_use_main_ip_restriction      = optional(bool, false)<br>      scm_min_tls_version              = optional(string, "1.2")<br>      scm_type                         = optional(string)<br>      linux_fx_version                 = optional(string)<br>      min_tls_version                  = optional(string, "1.2")<br>      pre_warmed_instance_count        = optional(number)<br>      public_network_enabled           = optional(bool, false)<br>      runtime_scale_monitoring_enabled = optional(bool, false)<br>      use_32_bit_worker_process        = optional(bool)<br>      vnet_route_all_enabled           = optional(bool)<br>      websocket_enabled                = optional(bool)<br><br>      ip_restriction = optional(list(object({<br>        name                      = optional(string)<br>        ip_address                = optional(string)<br>        service_tag               = optional(string)<br>        virtual_network_subnet_id = optional(string)<br>        priority                  = optional(number)<br>        action                    = optional(string)<br>        headers = optional(object({<br>          x_azure_fdid      = optional(string)<br>          x_fd_health_probe = optional(string)<br>          x_forwarded_for   = optional(string)<br>          x_forwarded_host  = optional(string)<br>        }))<br>      })), [])<br><br>      scm_ip_restriction = optional(list(object({<br>        name                      = optional(string)<br>        ip_address                = optional(string)<br>        service_tag               = optional(string)<br>        virtual_network_subnet_id = optional(string)<br>        priority                  = optional(number)<br>        action                    = optional(string)<br>        headers = optional(object({<br>          x_azure_fdid      = optional(string)<br>          x_fd_health_probe = optional(string)<br>          x_forwarded_for   = optional(string)<br>          x_forwarded_host  = optional(string)<br>        }))<br>      })), [])<br><br>      cors = optional(object({<br>        allowed_origins     = optional(set(string))<br>        support_credentials = optional(bool)<br>      }))<br>    }))<br>  }))</pre> | `null` | no |
 | <a name="input_rg_name"></a> [rg\_name](#input\_rg\_name) | The name of the resource group, this module does not create a resource group, it is expecting the value of a resource group already exists | `string` | n/a | yes |
 | <a name="input_tags"></a> [tags](#input\_tags) | A map of the tags to use on the resources that are deployed with this module. | `map(string)` | n/a | yes |
 
@@ -172,7 +155,6 @@ No modules.
 
 | Name | Description |
 |------|-------------|
-| <a name="output_logic_app_auto_swap_slot_names"></a> [logic\_app\_auto\_swap\_slot\_names](#output\_logic\_app\_auto\_swap\_slot\_names) | Auto-swap slot names for the Logic Apps |
 | <a name="output_logic_app_custom_domain_verification_ids"></a> [logic\_app\_custom\_domain\_verification\_ids](#output\_logic\_app\_custom\_domain\_verification\_ids) | Custom domain verification IDs for the Logic Apps |
 | <a name="output_logic_app_default_hostnames"></a> [logic\_app\_default\_hostnames](#output\_logic\_app\_default\_hostnames) | The default hostnames of the Logic Apps |
 | <a name="output_logic_app_identities"></a> [logic\_app\_identities](#output\_logic\_app\_identities) | Managed Service Identity information for the Logic Apps |
@@ -180,9 +162,6 @@ No modules.
 | <a name="output_logic_app_kinds"></a> [logic\_app\_kinds](#output\_logic\_app\_kinds) | The kinds of the Logic Apps |
 | <a name="output_logic_app_outbound_ip_addresses"></a> [logic\_app\_outbound\_ip\_addresses](#output\_logic\_app\_outbound\_ip\_addresses) | Comma-separated list of outbound IP addresses for the Logic Apps |
 | <a name="output_logic_app_possible_outbound_ip_addresses"></a> [logic\_app\_possible\_outbound\_ip\_addresses](#output\_logic\_app\_possible\_outbound\_ip\_addresses) | Comma-separated list of possible outbound IP addresses for the Logic Apps |
-| <a name="output_logic_app_principal_ids"></a> [logic\_app\_principal\_ids](#output\_logic\_app\_principal\_ids) | Principal IDs for the Service Principal associated with the MSI of the Logic Apps |
-| <a name="output_logic_app_publishing_passwords"></a> [logic\_app\_publishing\_passwords](#output\_logic\_app\_publishing\_passwords) | Passwords for the publishing usernames of the Logic Apps |
-| <a name="output_logic_app_publishing_usernames"></a> [logic\_app\_publishing\_usernames](#output\_logic\_app\_publishing\_usernames) | Usernames for publishing to the Logic Apps |
 | <a name="output_logic_app_site_credentials"></a> [logic\_app\_site\_credentials](#output\_logic\_app\_site\_credentials) | Site-level credentials for publishing to the Logic Apps |
 | <a name="output_logic_app_tenant_ids"></a> [logic\_app\_tenant\_ids](#output\_logic\_app\_tenant\_ids) | Tenant IDs for the Service Principal associated with the MSI of the Logic Apps |
 | <a name="output_service_plan_ids"></a> [service\_plan\_ids](#output\_service\_plan\_ids) | The IDs of the service plans |
