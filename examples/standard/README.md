@@ -22,6 +22,11 @@ module "network" {
     "sn1-${module.network.vnet_name}" = {
       address_prefixes  = ["10.0.0.0/24"]
       service_endpoints = ["Microsoft.Storage"]
+      delegation = [
+        {
+          type = "Microsoft.Web/serverFarms"
+        },
+      ]
     }
   }
 }
@@ -42,13 +47,13 @@ module "sa" {
       location = module.rg.rg_location
       tags     = module.rg.rg_tags
 
-      identity_type             = "SystemAssigned, UserAssigned"
-      identity_ids              = [azurerm_user_assigned_identity.uid.id]
-      shared_access_key_enabled = true
+      identity_type              = "SystemAssigned, UserAssigned"
+      identity_ids               = [azurerm_user_assigned_identity.uid.id]
+      shared_access_keys_enabled = true
 
       network_rules = {
         bypass                     = ["AzureServices"]
-        default_action             = "Deny"
+        default_action             = "Allow"
         ip_rules                   = [chomp(data.http.client_ip.response_body)]
         virtual_network_subnet_ids = [module.network.subnets_ids["sn1-${module.network.vnet_name}"]]
       }
@@ -58,7 +63,7 @@ module "sa" {
 
 
 module "logic_apps" {
-  source = "../../"
+  source = "cyber-scot/logic-app/azurerm"
 
   rg_name  = module.rg.rg_name
   location = module.rg.rg_location
@@ -68,12 +73,13 @@ module "logic_apps" {
     {
       name                       = "logic-${var.short}-${var.loc}-${var.env}-01"
       app_service_plan_name      = "asp-logic-${var.short}-${var.loc}-${var.env}-01"
-      os_type                    = "Linux"
-      sku_name                   = "Y1"
+      os_type                    = "Windows"
+      sku_name                   = "WS1"
       storage_account_name       = module.sa.storage_account_names["sa${var.short}${var.loc}${var.env}01"]
       storage_account_access_key = module.sa.primary_access_keys["sa${var.short}${var.loc}${var.env}01"]
       use_extension_bundle       = true
       bundle_version             = "2.*"
+      version                    = "~4"
       enabled                    = true
       identity_type              = "SystemAssigned, UserAssigned"
       identity_ids               = [azurerm_user_assigned_identity.uid.id]
@@ -106,7 +112,7 @@ No requirements.
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_logic_apps"></a> [logic\_apps](#module\_logic\_apps) | ../../ | n/a |
+| <a name="module_logic_apps"></a> [logic\_apps](#module\_logic\_apps) | cyber-scot/logic-app/azurerm | n/a |
 | <a name="module_network"></a> [network](#module\_network) | cyber-scot/network/azurerm | n/a |
 | <a name="module_rg"></a> [rg](#module\_rg) | cyber-scot/rg/azurerm | n/a |
 | <a name="module_sa"></a> [sa](#module\_sa) | cyber-scot/storage-account/azurerm | n/a |

@@ -12,7 +12,8 @@ resource "azurerm_service_plan" "service_plan" {
   tags                         = var.tags
 }
 
-resource "azurerm_logic_app_standard" "this" {
+resource "azurerm_logic_app_standard" "logic_app" {
+  depends_on = [azurerm_service_plan.service_plan]
   for_each = { for app in var.logic_apps : app.name => app if app.app_service_plan_name != null }
 
   name                       = each.value.name
