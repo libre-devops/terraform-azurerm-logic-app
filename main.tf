@@ -8,7 +8,6 @@ resource "azurerm_service_plan" "service_plan" {
   app_service_environment_id   = each.value.app_service_environment_id != null ? each.value.app_service_environment_id : null
   maximum_elastic_worker_count = each.value.maximum_elastic_worker_count != null ? each.value.maximum_elastic_worker_count : null
   worker_count                 = each.value.worker_count != null ? each.value.worker_count : null
-  per_site_scaling             = each.value.per_site_scaling_enabled != null ? each.value.per_site_scaling_enabled : null
   zone_balancing_enabled       = each.value.zone_balancing_enabled != null ? each.value.zone_balancing_enabled : null
   tags                         = var.tags
 }
@@ -51,56 +50,39 @@ resource "azurerm_logic_app_standard" "this" {
       ftps_state                = site_config.value.ftps_state != null ? site_config.value.ftps_state : null
       health_check_path         = site_config.value.health_check_path != null ? site_config.value.health_check_path : null
       http2_enabled             = site_config.value.http2_enabled != null ? site_config.value.http2_enabled : null
-      ip_restriction            = site_config.value.ip_restriction != null ? site_config.value.ip_restriction : null
       min_tls_version           = site_config.value.min_tls_version != null ? site_config.value.min_tls_version : null
       dotnet_framework_version  = site_config.value.dotnet_framework_version != null ? site_config.value.dotnet_framework_version : null
       scm_type                  = site_config.value.scm_type != null ? site_config.value.scm_type : null
       use_32_bit_worker_process = site_config.value.use_32_bit_worker_process != null ? site_config.value.use_32_bit_worker_process : null
-      websockets_enabled        = site_config.value.websockets_enabled != null ? site_config.value.websockets_enabled : null
+#      websockets_enabled        = site_config.value.websockets_enabled != null ? site_config.value.websockets_enabled : null
 
-      dynamic "ip_restriction" {
-        for_each = site_config.value.ip_restriction != null ? [site_config.value.ip_restriction] : []
-        content {
-          name                      = ip_restriction.value.name
-          ip_address                = ip_restriction.value.ip_address
-          virtual_network_subnet_id = ip_restriction.value.virtual_network_subnet_id
-          priority                  = ip_restriction.value.priority
-          action                    = ip_restriction.value.action
+      ip_restriction = [for ipr in site_config.value.ip_restriction : {
+      name                      = ipr.name
+      ip_address                = ipr.ip_address
+      virtual_network_subnet_id = ipr.virtual_network_subnet_id
+      priority                  = ipr.priority
+      action                    = ipr.action
+      headers                   = [for hdr in ipr.headers : {
+        x_azure_fdid      = hdr.x_azure_fdid
+        x_fd_health_probe = hdr.x_fd_health_probe
+        x_forwarded_for   = hdr.x_forwarded_for
+        x_forwarded_host  = hdr.x_forwarded_host
+      }]
+    }]
 
-          dynamic "headers" {
-            for_each = ip_restriction.value.headers != null ? [ip_restriction.value.headers] : []
-            content {
-              x_azure_fdid      = headers.value.x_azure_fdid
-              x_fd_health_probe = headers.value.x_fd_health_probe
-              x_forwarded_for   = headers.value.x_forwarded_for
-              x_forwarded_host  = headers.value.x_forwarded_host
-            }
-          }
-
-        }
-      }
-
-      dynamic "scm_ip_restriction" {
-        for_each = site_config.value.scm_ip_restriction != null ? [site_config.value.scm_ip_restriction] : []
-        content {
-          name                      = scm_ip_restriction.value.name
-          ip_address                = scm_ip_restriction.value.ip_address
-          virtual_network_subnet_id = scm_ip_restriction.value.virtual_network_subnet_id
-          priority                  = scm_ip_restriction.value.priority
-          action                    = scm_ip_restriction.value.action
-
-          dynamic "headers" {
-            for_each = scm_ip_restriction.value.headers != null ? [scm_ip_restriction.value.headers] : []
-            content {
-              x_azure_fdid      = headers.value.x_azure_fdid
-              x_fd_health_probe = headers.value.x_fd_health_probe
-              x_forwarded_for   = headers.value.x_forwarded_for
-              x_forwarded_host  = headers.value.x_forwarded_host
-            }
-          }
-
-        }
-      }
+      scm_ip_restriction = [for scmr in site_config.value.scm_ip_restriction : {
+      name                      = scmr.name
+      ip_address                = scmr.ip_address
+      virtual_network_subnet_id = scmr.virtual_network_subnet_id
+      priority                  = scmr.priority
+      action                    = scmr.action
+      headers                   = [for hdr in scmr.headers : {
+        x_azure_fdid      = hdr.x_azure_fdid
+        x_fd_health_probe = hdr.x_fd_health_probe
+        x_forwarded_for   = hdr.x_forwarded_for
+        x_forwarded_host  = hdr.x_forwarded_host
+      }]
+    }]
 
       dynamic "cors" {
         for_each = site_config.value.cors != null ? [site_config.value.cors] : []

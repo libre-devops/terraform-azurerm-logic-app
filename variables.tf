@@ -14,7 +14,6 @@ variable "logic_apps" {
     app_service_environment_id   = optional(string, null)
     maximum_elastic_worker_count = optional(number, null)
     worker_count                 = optional(number, null)
-    per_site_scaling_enabled     = optional(bool, null)
     zone_balancing_enabled       = optional(bool, null)
     storage_account_name         = string
     storage_account_access_key   = optional(string)
@@ -69,7 +68,7 @@ variable "logic_apps" {
           x_forwarded_for   = optional(string)
           x_forwarded_host  = optional(string)
         }))
-      })))
+      })), [])
 
       scm_ip_restriction = optional(list(object({
         name                      = optional(string)
@@ -84,7 +83,7 @@ variable "logic_apps" {
           x_forwarded_for   = optional(string)
           x_forwarded_host  = optional(string)
         }))
-      })))
+      })), [])
 
       cors = optional(object({
         allowed_origins     = optional(set(string))

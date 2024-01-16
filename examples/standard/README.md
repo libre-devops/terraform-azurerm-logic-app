@@ -42,8 +42,9 @@ module "sa" {
       location = module.rg.rg_location
       tags     = module.rg.rg_tags
 
-      identity_type = "SystemAssigned, UserAssigned"
-      identity_ids  = [azurerm_user_assigned_identity.uid.id]
+      identity_type             = "SystemAssigned, UserAssigned"
+      identity_ids              = [azurerm_user_assigned_identity.uid.id]
+      shared_access_key_enabled = true
 
       network_rules = {
         bypass                     = ["AzureServices"]
@@ -69,11 +70,13 @@ module "logic_apps" {
       app_service_plan_name      = "asp-logic-${var.short}-${var.loc}-${var.env}-01"
       os_type                    = "Linux"
       sku_name                   = "Y1"
-      storage_account_name       = module.sa.storage_accounts["sa${var.short}${var.loc}${var.env}01"].name
-      storage_account_access_key = module.sa.storage_accounts["sa${var.short}${var.loc}${var.env}01"].primary_access_key
+      storage_account_name       = module.sa.storage_account_names["sa${var.short}${var.loc}${var.env}01"]
+      storage_account_access_key = module.sa.primary_access_keys["sa${var.short}${var.loc}${var.env}01"]
       use_extension_bundle       = true
       bundle_version             = "2.*"
       enabled                    = true
+      identity_type              = "SystemAssigned, UserAssigned"
+      identity_ids               = [azurerm_user_assigned_identity.uid.id]
       virtual_network_subnet_id  = module.network.subnets_ids["sn1-${module.network.vnet_name}"]
       site_config = {
         ftps_state                = "AllAllowed"
@@ -95,9 +98,9 @@ No requirements.
 
 | Name | Version |
 |------|---------|
-| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | n/a |
-| <a name="provider_external"></a> [external](#provider\_external) | n/a |
-| <a name="provider_http"></a> [http](#provider\_http) | n/a |
+| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | 3.87.0 |
+| <a name="provider_external"></a> [external](#provider\_external) | 2.3.2 |
+| <a name="provider_http"></a> [http](#provider\_http) | 3.4.1 |
 
 ## Modules
 

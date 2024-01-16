@@ -1,8 +1,3 @@
-output "logic_app_auto_swap_slot_names" {
-  description = "Auto-swap slot names for the Logic Apps"
-  value       = { for k, v in azurerm_logic_app_standard.this : k => v.site_config.auto_swap_slot_name }
-}
-
 output "logic_app_custom_domain_verification_ids" {
   description = "Custom domain verification IDs for the Logic Apps"
   value       = { for k, v in azurerm_logic_app_standard.this : k => v.custom_domain_verification_id }
@@ -36,21 +31,6 @@ output "logic_app_outbound_ip_addresses" {
 output "logic_app_possible_outbound_ip_addresses" {
   description = "Comma-separated list of possible outbound IP addresses for the Logic Apps"
   value       = { for k, v in azurerm_logic_app_standard.this : k => v.possible_outbound_ip_addresses }
-}
-
-output "logic_app_principal_ids" {
-  description = "Principal IDs for the Service Principal associated with the MSI of the Logic Apps"
-  value       = { for k, v in azurerm_logic_app_standard.this : k => v.identity.0.principal_id }
-}
-
-output "logic_app_publishing_passwords" {
-  description = "Passwords for the publishing usernames of the Logic Apps"
-  value       = { for k, v in azurerm_logic_app_standard.this : k => v.site_credential.password }
-}
-
-output "logic_app_publishing_usernames" {
-  description = "Usernames for publishing to the Logic Apps"
-  value       = { for k, v in azurerm_logic_app_standard.this : k => v.site_credential.username }
 }
 
 output "logic_app_site_credentials" {
