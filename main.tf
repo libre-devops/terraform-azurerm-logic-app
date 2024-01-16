@@ -19,7 +19,7 @@ resource "azurerm_logic_app_standard" "this" {
   name                       = each.value.name
   location                   = var.location
   resource_group_name        = var.rg_name
-  tags                       = each.value.tags != null ? each.value.tags : null
+  tags                       = var.tags
   app_service_plan_id        = azurerm_service_plan.service_plan[each.key].id
   storage_account_name       = each.value.storage_account_name
   storage_account_access_key = each.value.storage_account_access_key
@@ -58,9 +58,57 @@ resource "azurerm_logic_app_standard" "this" {
       use_32_bit_worker_process = site_config.value.use_32_bit_worker_process != null ? site_config.value.use_32_bit_worker_process : null
       websockets_enabled        = site_config.value.websockets_enabled != null ? site_config.value.websockets_enabled : null
 
+      dynamic "ip_restriction" {
+        for_each = site_config.value.ip_restriction != null ? [site_config.value.ip_restriction] : []
+        content {
+          name                      = ip_restriction.value.name
+          ip_address                = ip_restriction.value.ip_address
+          virtual_network_subnet_id = ip_restriction.value.virtual_network_subnet_id
+          priority                  = ip_restriction.value.priority
+          action                    = ip_restriction.value.action
 
+          dynamic "headers" {
+            for_each = ip_restriction.value.headers != null ? [ip_restriction.value.headers] : []
+            content {
+              x_azure_fdid      = headers.value.x_azure_fdid
+              x_fd_health_probe = headers.value.x_fd_health_probe
+              x_forwarded_for   = headers.value.x_forwarded_for
+              x_forwarded_host  = headers.value.x_forwarded_host
+            }
+          }
 
+        }
+      }
 
+      dynamic "scm_ip_restriction" {
+        for_each = site_config.value.scm_ip_restriction != null ? [site_config.value.scm_ip_restriction] : []
+        content {
+          name                      = scm_ip_restriction.value.name
+          ip_address                = scm_ip_restriction.value.ip_address
+          virtual_network_subnet_id = scm_ip_restriction.value.virtual_network_subnet_id
+          priority                  = scm_ip_restriction.value.priority
+          action                    = scm_ip_restriction.value.action
+
+          dynamic "headers" {
+            for_each = scm_ip_restriction.value.headers != null ? [scm_ip_restriction.value.headers] : []
+            content {
+              x_azure_fdid      = headers.value.x_azure_fdid
+              x_fd_health_probe = headers.value.x_fd_health_probe
+              x_forwarded_for   = headers.value.x_forwarded_for
+              x_forwarded_host  = headers.value.x_forwarded_host
+            }
+          }
+
+        }
+      }
+
+      dynamic "cors" {
+        for_each = site_config.value.cors != null ? [site_config.value.cors] : []
+        content {
+          allowed_origins     = cors.value.allowed_origins
+          support_credentials = cors.value.support_credentials != null ? cors.value.support_credentials : null
+        }
+      }
     }
   }
 
@@ -87,6 +135,4 @@ resource "azurerm_logic_app_standard" "this" {
       identity_ids = length(try(each.value.identity_ids, [])) > 0 ? each.value.identity_ids : []
     }
   }
-
-
 }

@@ -94,11 +94,6 @@ variable "logic_apps" {
   }))
 }
 
-variable "name" {
-  type        = string
-  description = "The name of the VNet gateway"
-}
-
 variable "rg_name" {
   description = "The name of the resource group, this module does not create a resource group, it is expecting the value of a resource group already exists"
   type        = string
