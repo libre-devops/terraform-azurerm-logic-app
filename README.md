@@ -20,9 +20,76 @@ resource "azurerm_logic_app_standard" "this" {
   name                       = each.value.name
   location                   = var.location
   resource_group_name        = var.rg_name
+  tags                       = each.value.tags != null ? each.value.tags : null
   app_service_plan_id        = azurerm_service_plan.service_plan[each.key].id
   storage_account_name       = each.value.storage_account_name
-  storage_account_access_key = azurerm_storage_account.example.primary_access_key
+  storage_account_access_key = each.value.storage_account_access_key
+  use_extension_bundle       = each.value.use_extension_bundle != null ? each.value.use_extension_bundle : null
+  bundle_version             = each.value.use_extension_bundle != null ? each.value.bundle_version : null
+  client_affinity_enabled    = each.value.client_affinity_enabled != null ? each.value.client_affinity_enabled : null
+  client_certificate_mode    = each.value.client_certificate_mode != null ? each.value.client_certificate_mode : null
+  enabled                    = each.value.enabled != null ? each.value.enabled : true
+  https_only                 = each.value.https_only != null ? each.value.https_only : true
+  version                    = each.value.version != null ? each.value.version : null
+  virtual_network_subnet_id  = each.value.virtual_network_subnet_id != null ? each.value.virtual_network_subnet_id : null
+  app_settings               = each.value.app_settings != null ? each.value.app_settings : null
+
+  dynamic "connection_string" {
+    for_each = each.value.connection_string != null ? [each.value.connection_string] : []
+    content {
+      name  = connection_string.value.name
+      type  = connection_string.value.type
+      value = connection_string.value.value
+    }
+  }
+
+  dynamic "site_config" {
+    for_each = each.value.site_config != null ? [each.value.site_config] : []
+    content {
+      always_on                 = site_config.value.always_on != null ? site_config.value.always_on : null
+      app_scale_limit           = site_config.value.app_scale_limit != null ? site_config.value.app_scale_limit : null
+      elastic_instance_minimum  = site_config.value.elastic_instance_minimum != null ? site_config.value.elastic_instance_minimum : null
+      ftps_state                = site_config.value.ftps_state != null ? site_config.value.ftps_state : null
+      health_check_path         = site_config.value.health_check_path != null ? site_config.value.health_check_path : null
+      http2_enabled             = site_config.value.http2_enabled != null ? site_config.value.http2_enabled : null
+      ip_restriction            = site_config.value.ip_restriction != null ? site_config.value.ip_restriction : null
+      min_tls_version           = site_config.value.min_tls_version != null ? site_config.value.min_tls_version : null
+      dotnet_framework_version  = site_config.value.dotnet_framework_version != null ? site_config.value.dotnet_framework_version : null
+      scm_type                  = site_config.value.scm_type != null ? site_config.value.scm_type : null
+      use_32_bit_worker_process = site_config.value.use_32_bit_worker_process != null ? site_config.value.use_32_bit_worker_process : null
+      websockets_enabled        = site_config.value.websockets_enabled != null ? site_config.value.websockets_enabled : null
+
+
+
+
+    }
+  }
+
+  dynamic "identity" {
+    for_each = each.value.identity_type == "SystemAssigned" ? [each.value.identity_type] : []
+    content {
+      type = each.value.identity_type
+    }
+  }
+
+  dynamic "identity" {
+    for_each = each.value.identity_type == "SystemAssigned, UserAssigned" ? [each.value.identity_type] : []
+    content {
+      type         = each.value.identity_type
+      identity_ids = try(each.value.identity_ids, [])
+    }
+  }
+
+
+  dynamic "identity" {
+    for_each = each.value.identity_type == "UserAssigned" ? [each.value.identity_type] : []
+    content {
+      type         = each.value.identity_type
+      identity_ids = length(try(each.value.identity_ids, [])) > 0 ? each.value.identity_ids : []
+    }
+  }
+
+
 }
 ```
 ## Requirements
@@ -51,7 +118,7 @@ No modules.
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_location"></a> [location](#input\_location) | The location for this resource to be put in | `string` | n/a | yes |
-| <a name="input_logic_apps"></a> [logic\_apps](#input\_logic\_apps) | The logic app blocks | <pre>list(object({<br>    name                         = string<br>    app_service_plan_name        = optional(string)<br>    os_type                      = string<br>    sku_name                     = string<br>    app_service_environment_id   = optional(string, null)<br>    maximum_elastic_worker_count = optional(number, null)<br>    worker_count                 = optional(number, null)<br>    per_site_scaling_enabled     = optional(bool, null)<br>    zone_balancing_enabled       = optional(bool, null)<br>    storage_account_name         = string<br>  }))</pre> | `null` | no |
+| <a name="input_logic_apps"></a> [logic\_apps](#input\_logic\_apps) | The logic app blocks | <pre>list(object({<br>    name                         = string<br>    app_service_plan_name        = optional(string)<br>    os_type                      = string<br>    sku_name                     = string<br>    app_service_environment_id   = optional(string, null)<br>    maximum_elastic_worker_count = optional(number, null)<br>    worker_count                 = optional(number, null)<br>    per_site_scaling_enabled     = optional(bool, null)<br>    zone_balancing_enabled       = optional(bool, null)<br>    storage_account_name         = string<br>    storage_account_access_key   = optional(string)<br>    use_extension_bundle         = optional(bool)<br>    bundle_version               = optional(string)<br>    client_affinity_enabled      = optional(bool)<br>    client_certificate_mode      = optional(string)<br>    enabled                      = optional(bool)<br>    https_only                   = optional(bool, true)<br>    version                      = optional(string)<br>    virtual_network_subnet_id    = optional(string)<br>    identity_type                = optional(string)<br>    identity_ids                 = optional(list(string))<br>    app_settings                 = optional(map(string))<br><br>    connection_string = optional(object({<br>      name  = string<br>      type  = string<br>      value = string<br>    }))<br><br>    site_config = optional(object({<br>      always_on                        = optional(bool)<br>      app_scale_limit                  = optional(number)<br>      dotnet_framework_version         = optional(string)<br>      elastic_instance_minimum         = optional(number)<br>      ftps_state                       = optional(string)<br>      health_check_path                = optional(string)<br>      http2_enabled                    = optional(bool, false)<br>      scm_use_main_ip_restriction      = optional(bool, false)<br>      scm_min_tls_version              = optional(string, "1.2")<br>      scm_type                         = optional(string)<br>      linux_fx_version                 = optional(string)<br>      min_tls_version                  = optional(string, "1.2")<br>      pre_warmed_instance_count        = optional(number)<br>      public_network_enabled           = optional(bool, false)<br>      runtime_scale_monitoring_enabled = optional(bool, false)<br>      use_32_bit_worker_process        = optional(bool)<br>      vnet_route_all_enabled           = optional(bool)<br>      websocket_enabled                = optional(bool)<br><br>      ip_restriction = optional(list(object({<br>        name                      = optional(string)<br>        ip_address                = optional(string)<br>        service_tag               = optional(string)<br>        virtual_network_subnet_id = optional(string)<br>        priority                  = optional(number)<br>        action                    = optional(string)<br>        headers = optional(object({<br>          x_azure_fdid      = optional(string)<br>          x_fd_health_probe = optional(string)<br>          x_forwarded_for   = optional(string)<br>          x_forwarded_host  = optional(string)<br>        }))<br>      })))<br><br>      scm_ip_restriction = optional(list(object({<br>        name                      = optional(string)<br>        ip_address                = optional(string)<br>        service_tag               = optional(string)<br>        virtual_network_subnet_id = optional(string)<br>        priority                  = optional(number)<br>        action                    = optional(string)<br>        headers = optional(object({<br>          x_azure_fdid      = optional(string)<br>          x_fd_health_probe = optional(string)<br>          x_forwarded_for   = optional(string)<br>          x_forwarded_host  = optional(string)<br>        }))<br>      })))<br><br>      cors = optional(object({<br>        allowed_origins     = optional(set(string))<br>        support_credentials = optional(bool)<br>      }))<br>    }))<br>  }))</pre> | `null` | no |
 | <a name="input_name"></a> [name](#input\_name) | The name of the VNet gateway | `string` | n/a | yes |
 | <a name="input_rg_name"></a> [rg\_name](#input\_rg\_name) | The name of the resource group, this module does not create a resource group, it is expecting the value of a resource group already exists | `string` | n/a | yes |
 | <a name="input_tags"></a> [tags](#input\_tags) | A map of the tags to use on the resources that are deployed with this module. | `map(string)` | n/a | yes |
