@@ -1,14 +1,27 @@
 ```hcl
 module "rg" {
-  source = "cyber-scot/rg/azurerm"
+  source = "libre-devops/rg/azurerm"
 
-  name     = "rg-${var.short}-${var.loc}-${var.env}-01"
+  rg_name  = "rg-${var.short}-${var.loc}-${var.env}-01"
   location = local.location
   tags     = local.tags
 }
 
+locals {
+  vnet_address_space = "10.0.0.0/16"
+}
+
+
+
+module "subnet_calculator" {
+  source = "github.com/libre-devops/terraform-null-subnet-calculator"
+
+  base_cidr    = local.vnet_address_space
+  subnet_sizes = [24]
+}
+
 module "network" {
-  source = "cyber-scot/network/azurerm"
+  source = "registry.terraform.io/libre-devops/network/azurerm"
 
   rg_name  = module.rg.rg_name
   location = module.rg.rg_location
@@ -16,20 +29,22 @@ module "network" {
 
   vnet_name          = "vnet-${var.short}-${var.loc}-${var.env}-01"
   vnet_location      = module.rg.rg_location
-  vnet_address_space = ["10.0.0.0/16"]
+  vnet_address_space = module.subnet_calculator.base_cidr_set
 
   subnets = {
-    "sn1-${module.network.vnet_name}" = {
-      address_prefixes  = ["10.0.0.0/24"]
-      service_endpoints = ["Microsoft.Storage"]
+    for i, name in module.subnet_calculator.subnet_names :
+    name => {
+      address_prefixes  = toset([module.subnet_calculator.subnet_ranges[i]])
+      service_endpoints = ["Microsoft.Storage", "Microsoft.KeyVault"]
       delegation = [
         {
           type = "Microsoft.Web/serverFarms"
-        },
+        }
       ]
     }
   }
 }
+
 
 resource "azurerm_user_assigned_identity" "uid" {
   name                = "uid-${var.short}-${var.loc}-${var.env}-01"
@@ -38,8 +53,13 @@ resource "azurerm_user_assigned_identity" "uid" {
   tags                = module.rg.rg_tags
 }
 
+locals {
+  now                 = timestamp()
+  seven_days_from_now = timeadd(timestamp(), "168h")
+}
+
 module "sa" {
-  source = "cyber-scot/storage-account/azurerm"
+  source = "libre-devops/storage-account/azurerm"
   storage_accounts = [
     {
       name     = "sa${var.short}${var.loc}${var.env}01"
@@ -47,7 +67,7 @@ module "sa" {
       location = module.rg.rg_location
       tags     = module.rg.rg_tags
 
-      identity_type              = "SystemAssigned, UserAssigned"
+      identity_type              = "UserAssigned"
       identity_ids               = [azurerm_user_assigned_identity.uid.id]
       shared_access_keys_enabled = true
 
@@ -55,15 +75,14 @@ module "sa" {
         bypass                     = ["AzureServices"]
         default_action             = "Allow"
         ip_rules                   = [chomp(data.http.client_ip.response_body)]
-        virtual_network_subnet_ids = [module.network.subnets_ids["sn1-${module.network.vnet_name}"]]
+        virtual_network_subnet_ids = [module.network.subnets_ids[module.subnet_calculator.subnet_names[0]]]
       }
     },
   ]
 }
 
-
 module "logic_apps" {
-  source = "cyber-scot/logic-app/azurerm"
+  source = "../../"
 
   rg_name  = module.rg.rg_name
   location = module.rg.rg_location
@@ -81,9 +100,12 @@ module "logic_apps" {
       bundle_version             = "2.*"
       version                    = "~4"
       enabled                    = true
-      identity_type              = "SystemAssigned, UserAssigned"
+      identity_type              = "UserAssigned"
       identity_ids               = [azurerm_user_assigned_identity.uid.id]
-      virtual_network_subnet_id  = module.network.subnets_ids["sn1-${module.network.vnet_name}"]
+      virtual_network_subnet_id  = module.network.subnets_ids[module.subnet_calculator.subnet_names[0]]
+      app_settings = {
+        "FUNCTIONS_WORKER_RUNTIME" = "dotnet"
+      }
       site_config = {
         ftps_state                = "AllAllowed"
         http2_enabled             = true
@@ -104,18 +126,18 @@ No requirements.
 
 | Name | Version |
 |------|---------|
-| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | 3.87.0 |
-| <a name="provider_external"></a> [external](#provider\_external) | 2.3.2 |
-| <a name="provider_http"></a> [http](#provider\_http) | 3.4.1 |
+| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | 4.0.1 |
+| <a name="provider_http"></a> [http](#provider\_http) | 3.4.4 |
 
 ## Modules
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_logic_apps"></a> [logic\_apps](#module\_logic\_apps) | cyber-scot/logic-app/azurerm | n/a |
-| <a name="module_network"></a> [network](#module\_network) | cyber-scot/network/azurerm | n/a |
-| <a name="module_rg"></a> [rg](#module\_rg) | cyber-scot/rg/azurerm | n/a |
-| <a name="module_sa"></a> [sa](#module\_sa) | cyber-scot/storage-account/azurerm | n/a |
+| <a name="module_logic_apps"></a> [logic\_apps](#module\_logic\_apps) | ../../ | n/a |
+| <a name="module_network"></a> [network](#module\_network) | registry.terraform.io/libre-devops/network/azurerm | n/a |
+| <a name="module_rg"></a> [rg](#module\_rg) | libre-devops/rg/azurerm | n/a |
+| <a name="module_sa"></a> [sa](#module\_sa) | libre-devops/storage-account/azurerm | n/a |
+| <a name="module_subnet_calculator"></a> [subnet\_calculator](#module\_subnet\_calculator) | github.com/libre-devops/terraform-null-subnet-calculator | n/a |
 
 ## Resources
 
@@ -123,8 +145,6 @@ No requirements.
 |------|------|
 | [azurerm_user_assigned_identity.uid](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/user_assigned_identity) | resource |
 | [azurerm_client_config.current](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config) | data source |
-| [external_external.detect_os](https://registry.terraform.io/providers/hashicorp/external/latest/docs/data-sources/external) | data source |
-| [external_external.generate_timestamp](https://registry.terraform.io/providers/hashicorp/external/latest/docs/data-sources/external) | data source |
 | [http_http.client_ip](https://registry.terraform.io/providers/hashicorp/http/latest/docs/data-sources/http) | data source |
 
 ## Inputs
