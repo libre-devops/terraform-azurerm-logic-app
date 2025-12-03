@@ -7,27 +7,33 @@ variable "logic_apps" {
   description = "The logic app blocks"
   default     = null
   type = list(object({
-    name                         = string
-    app_service_plan_name        = optional(string)
-    os_type                      = string
-    sku_name                     = string
-    app_service_environment_id   = optional(string, null)
-    maximum_elastic_worker_count = optional(number, null)
-    worker_count                 = optional(number, null)
-    zone_balancing_enabled       = optional(bool, null)
-    storage_account_name         = string
-    storage_account_access_key   = optional(string)
-    use_extension_bundle         = optional(bool)
-    bundle_version               = optional(string)
-    client_affinity_enabled      = optional(bool)
-    client_certificate_mode      = optional(string)
-    enabled                      = optional(bool)
-    https_only                   = optional(bool, true)
-    version                      = optional(string)
-    virtual_network_subnet_id    = optional(string)
-    identity_type                = optional(string)
-    identity_ids                 = optional(list(string))
-    app_settings                 = optional(map(string))
+    name                                     = string
+    app_service_plan_name                    = optional(string)
+    os_type                                  = string
+    sku_name                                 = string
+    app_service_environment_id               = optional(string, null)
+    maximum_elastic_worker_count             = optional(number, null)
+    worker_count                             = optional(number, null)
+    zone_balancing_enabled                   = optional(bool, null)
+    storage_account_name                     = string
+    storage_account_access_key               = optional(string)
+    use_extension_bundle                     = optional(bool)
+    bundle_version                           = optional(string)
+    client_affinity_enabled                  = optional(bool)
+    client_certificate_mode                  = optional(string)
+    enabled                                  = optional(bool)
+    https_only                               = optional(bool, true)
+    version                                  = optional(string)
+    ftp_publish_basic_authentication_enabled = optional(bool)
+    scm_publish_basic_authentication_enabled = optional(bool)
+    virtual_network_subnet_id                = optional(string)
+    identity_type                            = optional(string)
+    identity_ids                             = optional(list(string))
+    app_settings                             = optional(map(string))
+    public_network_access                    = optional(string)
+    storage_account_share_name               = optional(string)
+    vnet_content_share_enabled               = optional(bool)
+
 
     connection_string = optional(object({
       name  = string
@@ -38,6 +44,7 @@ variable "logic_apps" {
     site_config = optional(object({
       always_on                        = optional(bool)
       app_scale_limit                  = optional(number)
+      auto_swap_slot_name              = optional(string)
       dotnet_framework_version         = optional(string)
       elastic_instance_minimum         = optional(number)
       ftps_state                       = optional(string)
@@ -49,11 +56,12 @@ variable "logic_apps" {
       linux_fx_version                 = optional(string)
       min_tls_version                  = optional(string, "1.2")
       pre_warmed_instance_count        = optional(number)
-      public_network_enabled           = optional(bool, false)
+      public_network_access            = optional(string)
       runtime_scale_monitoring_enabled = optional(bool, false)
       use_32_bit_worker_process        = optional(bool)
       vnet_route_all_enabled           = optional(bool)
       websocket_enabled                = optional(bool)
+      websockets_enabled               = optional(bool)
 
       ip_restriction = optional(list(object({
         name                      = optional(string)
@@ -62,13 +70,14 @@ variable "logic_apps" {
         virtual_network_subnet_id = optional(string)
         priority                  = optional(number)
         action                    = optional(string)
+        description               = optional(string)
         headers = optional(object({
           x_azure_fdid      = optional(string)
           x_fd_health_probe = optional(string)
           x_forwarded_for   = optional(string)
           x_forwarded_host  = optional(string)
         }))
-      })), [])
+      })))
 
       scm_ip_restriction = optional(list(object({
         name                      = optional(string)
@@ -77,13 +86,14 @@ variable "logic_apps" {
         virtual_network_subnet_id = optional(string)
         priority                  = optional(number)
         action                    = optional(string)
+        description               = optional(string)
         headers = optional(object({
           x_azure_fdid      = optional(string)
           x_fd_health_probe = optional(string)
           x_forwarded_for   = optional(string)
           x_forwarded_host  = optional(string)
         }))
-      })), [])
+      })))
 
       cors = optional(object({
         allowed_origins     = optional(set(string))

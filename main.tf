@@ -16,22 +16,28 @@ resource "azurerm_logic_app_standard" "logic_app" {
   depends_on = [azurerm_service_plan.service_plan]
   for_each   = { for app in var.logic_apps : app.name => app if app.app_service_plan_name != null }
 
-  name                       = each.value.name
-  location                   = var.location
-  resource_group_name        = var.rg_name
-  tags                       = var.tags
-  app_service_plan_id        = azurerm_service_plan.service_plan[each.key].id
-  storage_account_name       = each.value.storage_account_name
-  storage_account_access_key = each.value.storage_account_access_key
-  use_extension_bundle       = each.value.use_extension_bundle != null ? each.value.use_extension_bundle : null
-  bundle_version             = each.value.use_extension_bundle != null ? each.value.bundle_version : null
-  client_affinity_enabled    = each.value.client_affinity_enabled != null ? each.value.client_affinity_enabled : null
-  client_certificate_mode    = each.value.client_certificate_mode != null ? each.value.client_certificate_mode : null
-  enabled                    = each.value.enabled != null ? each.value.enabled : true
-  https_only                 = each.value.https_only != null ? each.value.https_only : true
-  version                    = each.value.version != null ? each.value.version : null
-  virtual_network_subnet_id  = each.value.virtual_network_subnet_id != null ? each.value.virtual_network_subnet_id : null
-  app_settings               = each.value.app_settings != null ? each.value.app_settings : null
+  name                                     = each.value.name
+  location                                 = var.location
+  resource_group_name                      = var.rg_name
+  tags                                     = var.tags
+  app_service_plan_id                      = azurerm_service_plan.service_plan[each.key].id
+  storage_account_name                     = each.value.storage_account_name
+  storage_account_access_key               = each.value.storage_account_access_key
+  use_extension_bundle                     = each.value.use_extension_bundle != null ? each.value.use_extension_bundle : null
+  bundle_version                           = each.value.use_extension_bundle != null ? each.value.bundle_version : null
+  client_affinity_enabled                  = each.value.client_affinity_enabled != null ? each.value.client_affinity_enabled : null
+  client_certificate_mode                  = each.value.client_certificate_mode != null ? each.value.client_certificate_mode : null
+  enabled                                  = each.value.enabled != null ? each.value.enabled : true
+  https_only                               = each.value.https_only != null ? each.value.https_only : true
+  version                                  = each.value.version != null ? each.value.version : null
+  virtual_network_subnet_id                = each.value.virtual_network_subnet_id != null ? each.value.virtual_network_subnet_id : null
+  app_settings                             = each.value.app_settings != null ? each.value.app_settings : null
+  ftp_publish_basic_authentication_enabled = each.value.ftp_publish_basic_authentication_enabled
+  scm_publish_basic_authentication_enabled = each.value.scm_publish_basic_authentication_enabled
+  public_network_access                    = each.value.public_network_access
+  storage_account_share_name               = each.value.storage_account_share_name
+  vnet_content_share_enabled               = each.value.vnet_content_share_enabled
+
 
   dynamic "connection_string" {
     for_each = each.value.connection_string != null ? [each.value.connection_string] : []
@@ -45,45 +51,65 @@ resource "azurerm_logic_app_standard" "logic_app" {
   dynamic "site_config" {
     for_each = each.value.site_config != null ? [each.value.site_config] : []
     content {
-      always_on                 = site_config.value.always_on != null ? site_config.value.always_on : null
-      app_scale_limit           = site_config.value.app_scale_limit != null ? site_config.value.app_scale_limit : null
-      elastic_instance_minimum  = site_config.value.elastic_instance_minimum != null ? site_config.value.elastic_instance_minimum : null
-      ftps_state                = site_config.value.ftps_state != null ? site_config.value.ftps_state : null
-      health_check_path         = site_config.value.health_check_path != null ? site_config.value.health_check_path : null
-      http2_enabled             = site_config.value.http2_enabled != null ? site_config.value.http2_enabled : null
-      min_tls_version           = site_config.value.min_tls_version != null ? site_config.value.min_tls_version : null
-      dotnet_framework_version  = site_config.value.dotnet_framework_version != null ? site_config.value.dotnet_framework_version : null
-      scm_type                  = site_config.value.scm_type != null ? site_config.value.scm_type : null
-      use_32_bit_worker_process = site_config.value.use_32_bit_worker_process != null ? site_config.value.use_32_bit_worker_process : null
-      #      websockets_enabled        = site_config.value.websockets_enabled != null ? site_config.value.websockets_enabled : null
+      always_on                   = site_config.value.always_on != null ? site_config.value.always_on : null
+      app_scale_limit             = site_config.value.app_scale_limit != null ? site_config.value.app_scale_limit : null
+      auto_swap_slot_name         = site_config.value.auto_swap_slot_name != null ? site_config.value.auto_swap_slot_name : null
+      elastic_instance_minimum    = site_config.value.elastic_instance_minimum != null ? site_config.value.elastic_instance_minimum : null
+      ftps_state                  = site_config.value.ftps_state != null ? site_config.value.ftps_state : null
+      health_check_path           = site_config.value.health_check_path != null ? site_config.value.health_check_path : null
+      http2_enabled               = site_config.value.http2_enabled != null ? site_config.value.http2_enabled : null
+      min_tls_version             = site_config.value.min_tls_version != null ? site_config.value.min_tls_version : null
+      dotnet_framework_version    = site_config.value.dotnet_framework_version != null ? site_config.value.dotnet_framework_version : null
+      scm_type                    = site_config.value.scm_type != null ? site_config.value.scm_type : null
+      use_32_bit_worker_process   = site_config.value.use_32_bit_worker_process != null ? site_config.value.use_32_bit_worker_process : null
+      websockets_enabled          = site_config.value.websockets_enabled != null ? site_config.value.websockets_enabled : null
+      scm_use_main_ip_restriction = site_config.value.scm_use_main_ip_restriction != null ? site_config.value.scm_use_main_ip_restriction : null
 
-      ip_restriction = [for ipr in site_config.value.ip_restriction : {
-        name                      = ipr.name
-        ip_address                = ipr.ip_address
-        virtual_network_subnet_id = ipr.virtual_network_subnet_id
-        priority                  = ipr.priority
-        action                    = ipr.action
-        headers = [for hdr in ipr.headers : {
-          x_azure_fdid      = hdr.x_azure_fdid
-          x_fd_health_probe = hdr.x_fd_health_probe
-          x_forwarded_for   = hdr.x_forwarded_for
-          x_forwarded_host  = hdr.x_forwarded_host
-        }]
-      }]
+      dynamic "ip_restriction" {
+        for_each = site_config.value.ip_restriction != null ? site_config.value.ip_restriction : []
+        content {
+          name                      = ip_restriction.value.name
+          ip_address                = ip_restriction.value.ip_address
+          virtual_network_subnet_id = ip_restriction.value.virtual_network_subnet_id
+          priority                  = ip_restriction.value.priority
+          action                    = ip_restriction.value.action
+          description               = ip_restriction.value.description
+          service_tag               = ip_restriction.value.service_tag
 
-      scm_ip_restriction = [for scmr in site_config.value.scm_ip_restriction : {
-        name                      = scmr.name
-        ip_address                = scmr.ip_address
-        virtual_network_subnet_id = scmr.virtual_network_subnet_id
-        priority                  = scmr.priority
-        action                    = scmr.action
-        headers = [for hdr in scmr.headers : {
-          x_azure_fdid      = hdr.x_azure_fdid
-          x_fd_health_probe = hdr.x_fd_health_probe
-          x_forwarded_for   = hdr.x_forwarded_for
-          x_forwarded_host  = hdr.x_forwarded_host
-        }]
-      }]
+          dynamic "headers" {
+            for_each = ip_restriction.value.headers != null ? [ip_restriction.value.headers] : []
+            content {
+              x_azure_fdid      = headers.value.x_azure_fdid
+              x_fd_health_probe = headers.value.x_fd_health_probe
+              x_forwarded_for   = headers.value.x_forwarded_for
+              x_forwarded_host  = headers.x_forwarded_host
+            }
+          }
+        }
+      }
+
+      dynamic "scm_ip_restriction" {
+        for_each = site_config.value.scm_ip_restriction != null ? site_config.value.scm_ip_restriction : []
+        content {
+          name                      = scm_ip_restriction.value.name
+          ip_address                = scm_ip_restriction.value.ip_address
+          virtual_network_subnet_id = scm_ip_restriction.value.virtual_network_subnet_id
+          priority                  = scm_ip_restriction.value.priority
+          action                    = scm_ip_restriction.value.action
+          description               = scm_ip_restriction.value.description
+          service_tag               = scm_ip_restriction.value.service_tag
+
+          dynamic "headers" {
+            for_each = scm_ip_restriction.value.headers != null ? [scm_ip_restriction.value.headers] : []
+            content {
+              x_azure_fdid      = headers.value.x_azure_fdid
+              x_fd_health_probe = headers.value.x_fd_health_probe
+              x_forwarded_for   = headers.value.x_forwarded_for
+              x_forwarded_host  = headers.x_forwarded_host
+            }
+          }
+        }
+      }
 
       dynamic "cors" {
         for_each = site_config.value.cors != null ? [site_config.value.cors] : []
